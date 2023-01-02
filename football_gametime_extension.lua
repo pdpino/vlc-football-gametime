@@ -61,8 +61,7 @@ function _get_current_file()
 end
 
 function _get_meta_filepath()
-	local udata_dir = vlc.config.userdatadir()
-	return udata_dir.."/football-gametime.data"
+	return vlc.config.userdatadir().."/football-gametime.data"
 end
 
 function _read_table()
@@ -78,7 +77,7 @@ function _read_table()
 			break
 		end
 
-		local _, _, key, offsets = string.find(line, "(.*)%s(%S+-%S+)$")
+		local _, _, key, offsets = string.find(line, "(.*)%s(%S*-%S*)$")
 		if key ~= nil and key ~= "" and offsets ~= nil and offsets ~= "" then
 			table[key] = offsets
 		end
@@ -97,11 +96,7 @@ function _save_table(table)
 end
 
 function _split_offsets(offsets)
-  local _, _, raw_half1, raw_half2 = string.find(offsets, "^(%S+)-(%S+)$")
-	if raw_half1 == nil or raw_half2 == nil then
-		raw_half1 = offsets
-		raw_half2 = nil
-	end
+  local _, _, raw_half1, raw_half2 = string.find(offsets, "^(%S*)-(%S*)$")
 
 	local err1, half1 = parse_and_validate_gametime(raw_half1)
 	local err2, half2 = parse_and_validate_gametime(raw_half2)
@@ -145,14 +140,16 @@ function click_save()
 	if err1 then
 		error_input:set_text("Error: cannot parse 1st half: " .. (result1 or ""))
 		return
-	elseif result1 == nil or result1 == "" then
-		error_input:set_text("Error: 1st half cannot be empty")
-		return
 	end
 
 	local err2, result2 = parse_and_validate_gametime(text_input_2half:get_text())
 	if err2 then
 		error_input:set_text("Error: cannot parse 2nd half: " .. (result2 or ""))
+		return
+	end
+
+	if result1 == "" and result2 == "" then
+		error_input:set_text("Error: provide at least one kickoff time")
 		return
 	end
 
@@ -192,11 +189,15 @@ function activate()
 end
 
 function deactivate()
-	-- main_dlg:delete()
+	main_dlg:delete()
 end
 
 function close()
-	-- vlc.deactivate()
+
+end
+
+function meta_changed()
+
 end
 
 function trigger_menu(id)
