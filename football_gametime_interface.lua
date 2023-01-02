@@ -4,12 +4,12 @@
 
 
 -- FIXME: copied from extension:
+-- modified: return numbers instead of strings
 CONFIG_KEY = "bookmark10"
 
 function parse_and_validate_gametime(value)
-	-- modified from extension: returns as integer
 	if value == nil or value == "" then
-		return false, 0
+		return false, -1
 	end
 
 	local _, _, minutes, seconds = string.find(value, "^(%d+):(%d+)$")
@@ -17,13 +17,9 @@ function parse_and_validate_gametime(value)
 	if minutes == nil or seconds == nil then
 		_, _, seconds = string.find(value, "^(%d+)$")
 		if seconds == nil then
-			return true, 0
+			return true, -1
 		end
 		minutes = "0"
-	end
-
-	if tonumber(seconds) >= 60 then
-		return true, 0
 	end
 
 	return false, tonumber(minutes) * 60 + tonumber(seconds)
@@ -37,16 +33,15 @@ function _split_offsets(offsets)
 
 	if err1 or err2 then
 		vlc.msg.err("Cannot parse offsets: " .. offsets)
-		return "", ""
+		return -1, -1
 	end
 
 	return half1, half2
 end
 
 function load_offsets()
-	-- modified from extension: use global vars; use integers
-	kickoff_1half = 0
-	kickoff_2half = 45*60
+	kickoff_1half = -1
+	kickoff_2half = -1
 
 	offsets = vlc.config.get(CONFIG_KEY)
 
@@ -66,11 +61,15 @@ function seconds_to_gametime(minutes, seconds)
 end
 
 function build_display_time(elapsed_seconds)
+	if kickoff_1half == -1 and kickoff_2half == -1 then
+		return "no kickoff times"
+	end
+
 	if elapsed_seconds < kickoff_1half then
 		return "T -"..tostring(kickoff_1half - elapsed_seconds)
 	end
 
-	local is_first_half = elapsed_seconds < kickoff_2half
+	local is_first_half = kickoff_2half == -1 or elapsed_seconds < kickoff_2half
 	local current_time = elapsed_seconds
 
 	if is_first_half then
@@ -104,8 +103,8 @@ end
 function main_loop()
 	vlc.msg.info("Running main loop")
 	while true do
-		load_offsets()
 		if vlc.input.item() ~= nil and vlc.playlist.status()~="stopped" then
+			load_offsets()
 			local elapsed_secs = round(vlc.var.get(vlc.object.input(), "time") / 1000000)
 			vlc.msg.dbg("Elapsed: "..tostring(elapsed_secs))
 			vlc.osd.message(build_display_time(elapsed_secs), 123, OSD_POSITION, 10000000)

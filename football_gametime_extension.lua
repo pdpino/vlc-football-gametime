@@ -72,7 +72,7 @@ function _read_table()
 	end
 
 	table = {}
-	table["default"] = "00:00-45:00"
+	table["default"] = "00:00-"
 	while true do
 		local line = f:read()
 		if line == nil then
@@ -160,7 +160,7 @@ function click_save()
 	end
 
 	save_offsets(result1, result2)
-	send_to_worker(value_1half, value_2half)
+	send_to_worker(result1, result2)
 
 	error_input:set_text("")
 	main_dlg:delete()
