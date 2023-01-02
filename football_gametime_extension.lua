@@ -5,6 +5,7 @@ TODO: docs
 --]]----------------------------------------
 
 EXTENSION_TITLE = "Football gametime"
+CONFIG_KEY = "bookmark10"
 
 function descriptor()
 	return {
@@ -71,6 +72,7 @@ function _read_table()
 	end
 
 	table = {}
+	table["default"] = "00:00-45:00"
 	while true do
 		local line = f:read()
 		if line == nil then
@@ -109,8 +111,12 @@ function _split_offsets(offsets)
 	return half1, half2
 end
 
+function _merge_offsets(half1, half2)
+	return (half1 or "").."-"..(half2 or "")
+end
+
 function save_offsets(offset_1half, offset_2half)
-	local offsets = offset_1half.."-"..offset_2half
+	local offsets = _merge_offsets(offset_1half, offset_2half)
 
 	local table = _read_table()
 	local key = _get_current_file()
@@ -154,6 +160,7 @@ function click_save()
 	end
 
 	save_offsets(result1, result2)
+	send_to_worker(value_1half, value_2half)
 
 	error_input:set_text("")
 	main_dlg:delete()
@@ -163,12 +170,21 @@ function click_cancel()
 	main_dlg:delete()
 end
 
+function clear_worker_msg()
+	vlc.config.set(CONFIG_KEY, "")
+end
+
+function send_to_worker(value_1half, value_2half)
+	vlc.config.set(CONFIG_KEY, _merge_offsets(value_1half, value_2half))
+end
+
 function create_dialog()
 	main_dlg = vlc.dialog(EXTENSION_TITLE)
 
 	main_dlg:add_label("Kick off times", 1, 1, 2, 1) -- col, row, colspan, rowspan
 
 	local value_1half, value_2half = load_offsets()
+	send_to_worker(value_1half, value_2half)
 
 	main_dlg:add_label("1st half", 1, 2, 1, 1)
 	text_input_1half = main_dlg:add_text_input(value_1half, 2, 2, 1, 1)
@@ -189,15 +205,17 @@ function activate()
 end
 
 function deactivate()
-	main_dlg:delete()
+	clear_worker_msg()
+	main_dlg:delete() -- FIXME: does not always work!
 end
 
 function close()
-
+	clear_worker_msg()
 end
 
 function meta_changed()
-
+	local value_1half, value_2half = load_offsets()
+	send_to_worker(value_1half, value_2half)
 end
 
 function trigger_menu(id)
