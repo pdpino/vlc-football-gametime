@@ -110,7 +110,11 @@ function main_loop()
 			vlc.osd.message(build_display_time(elapsed_secs), 123, OSD_POSITION, 10000000)
 		end
 
-		sleep(1)
+		-- if vlc.playlist.status()=="stopped" then
+		-- 	sleep(0.2)
+		-- else
+		-- end
+		sleep(0.2)
 	end
 end
 
