@@ -1,7 +1,9 @@
 --[[-----
-	Football Gametime VLC Interface
+Football Gametime VLC Interface
 
-  Shows the time as On Screen Display (OSD).
+Shows the gametime as On Screen Display (OSD).
+
+Author: @pdpino
 --]] -----
 -- FIXME: codeblock mostly copied from extension file,
 -- with small modification: return numbers instead of strings

@@ -1,7 +1,9 @@
 --[[----------------------------------------
-	Football Gametime VLC Extension
+Football Gametime VLC Extension
 
-	Allows saving kick off times for each match.
+Allows saving kick off times for each match.
+
+Author: @pdpino
 --]] ----------------------------------------
 EXTENSION_TITLE = "Football gametime"
 CONFIG_KEY = "bookmark10"
