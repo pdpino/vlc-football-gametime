@@ -192,8 +192,8 @@ function create_dialog()
     main_dlg:add_label("2nd half", 1, 3, 1, 1)
     text_input_2half = main_dlg:add_text_input(value_2half, 2, 3, 1, 1)
 
-    main_dlg:add_button("Cancel", click_cancel, 1, 4, 1, 1)
-    main_dlg:add_button("Save", click_save, 2, 4, 1, 1)
+    main_dlg:add_button("Save", click_save, 1, 4, 2, 1)
+    main_dlg:add_button("Cancel", click_cancel, 1, 5, 2, 1)
 
     error_input = main_dlg:add_label("", 1, 6, 2, 1)
 
