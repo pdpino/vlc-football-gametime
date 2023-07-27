@@ -40,5 +40,6 @@ luac.out
 *.hex
 
 # Other
+logo/
 *.mp4
 README.pdf

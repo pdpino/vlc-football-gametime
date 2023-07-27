@@ -5,6 +5,8 @@ _Developed by [pdpino](https://github.com/pdpino)_
 Show the gametime in a football match in the top left corner of the video.
 You need to save the kick off times for each video.
 
+![gametime|100x100](demos/example-black.png)
+
 
 ## Installation
 
