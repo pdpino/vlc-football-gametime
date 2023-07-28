@@ -30,10 +30,11 @@ function parse_and_validate_gametime(value)
         return false, ""
     end
 
-    local _, _, minutes, seconds = string.find(value, "^(%d+):(%d+)$")
+    -- TODO: parse hour:minutes:seconds as well?
+    local _, _, minutes, seconds = string.find(value, "^%s*(%d+)[%.:;,%-_]+(%d+)%s*$")
 
     if minutes == nil or seconds == nil then
-        _, _, seconds = string.find(value, "^(%d+)$")
+        _, _, seconds = string.find(value, "^%s*(%d+)%s*$")
         if seconds == nil then
             return true, "wrong time format"
         end
