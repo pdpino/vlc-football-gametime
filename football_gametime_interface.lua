@@ -1,13 +1,16 @@
 --[[-----
 Football Gametime VLC Interface
-
-Shows the gametime as On Screen Display (OSD).
-
 Author: @pdpino
+
+The interface displays the gametime on the screen as On Screen Display (OSD).
+Receives a "message" from the extension via a bookmark, which indicates the kickoff times and configurations.
+
+The message format is detailed in the extension.
+
 --]] -----
--- FIXME: codeblock mostly copied from extension file,
--- with small modification: return numbers instead of strings
 CONFIG_KEY = "bookmark10"
+OSD_CHANNEL_ID = 123
+DEFAULT_OSD_POSITION = "top-left"
 
 function parse_and_validate_gametime(value)
     if value == nil or value == "" then
@@ -27,36 +30,33 @@ function parse_and_validate_gametime(value)
     return false, tonumber(minutes) * 60 + tonumber(seconds)
 end
 
-function _split_offsets(offsets)
-    local _, _, raw_half1, raw_half2 = string.find(offsets, "^(%S*)-(%S*)$")
+function _read_message(message)
+    local _, _, raw_position, raw_half1, raw_half2 = string.find(message, "^(%S+)%s*(%S*)-(%S*)$")
 
     local err1, half1 = parse_and_validate_gametime(raw_half1)
     local err2, half2 = parse_and_validate_gametime(raw_half2)
+    -- vlc.msg.dbg("Decoded: " .. raw_position .. " " .. half1 .. " " .. half2)
 
     if err1 or err2 then
-        vlc.msg.err("Cannot parse offsets: " .. offsets)
+        vlc.msg.err("Cannot parse message: " .. message)
         return -1, -1
     end
 
-    return half1, half2
+    return raw_position, half1, half2
 end
 
-function load_offsets()
+function load_config()
+    osd_position = DEFAULT_OSD_POSITION
     kickoff_1half = -1
     kickoff_2half = -1
 
-    offsets = vlc.config.get(CONFIG_KEY)
+    message = vlc.config.get(CONFIG_KEY)
 
-    if offsets ~= nil then
-        kickoff_1half, kickoff_2half = _split_offsets(offsets)
+    if message ~= nil then
+        osd_position, kickoff_1half, kickoff_2half = _read_message(message)
     end
 end
 
--- Finished copying from extension
-
-OSD_POSITION = "top-left"
-
--- this could be reused? --> save prettier times
 function seconds_to_gametime(minutes, seconds)
     return string.format("%02d:%02d", minutes, seconds)
 end
@@ -102,22 +102,23 @@ function round(num)
 end
 
 function main_loop()
-    vlc.msg.info("Running main loop")
+    vlc.msg.info("Starting main loop")
+    vlc.config.set(CONFIG_KEY, "") -- clear leftover values
     while true do
-        if vlc.input.item() ~= nil and vlc.playlist.status() ~= "stopped" then
-            -- if vlc.config.get(CONFIG_KEY) ~= nil then
-
-            load_offsets()
-            local elapsed_secs = round(vlc.var.get(vlc.object.input(), "time") / 1000000)
-            vlc.msg.dbg("Elapsed: " .. tostring(elapsed_secs))
-            vlc.osd.message(build_display_time(elapsed_secs), 123, OSD_POSITION, 10000000)
+        local msg = vlc.config.get(CONFIG_KEY)
+        if msg == nil or msg == "" then
+            sleep(0.5)
+        else
+            if vlc.input.item() ~= nil and vlc.playlist.status() ~= "stopped" then
+                load_config()
+                local elapsed_secs = round(vlc.var.get(vlc.object.input(), "time") / 1000000)
+                vlc.msg.dbg("Elapsed: " .. tostring(elapsed_secs))
+                vlc.osd.message(build_display_time(elapsed_secs), OSD_CHANNEL_ID, osd_position, 10000000)
+                -- msg, channel_id, position, duration_microseconds
+            end
+            sleep(0.2)
         end
 
-        -- if vlc.playlist.status()=="stopped" then
-        -- 	sleep(0.2)
-        -- else
-        -- end
-        sleep(0.2)
     end
 end
 

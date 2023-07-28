@@ -1,9 +1,18 @@
 --[[----------------------------------------
 Football Gametime VLC Extension
-
-Allows saving kick off times for each match.
-
 Author: @pdpino
+
+The extension handles the input of kick off times, saves this information to a storage under userdatadir,
+and sends a message to the interface with the configuration.
+The interface is in charge of displaying the gametime in the screen.
+
+The message is "sent" by saving a bookmark with the text.
+
+The message format is: "POSITION KO_1-KO_2"
+    - POSITION: indicates the position for the text (one of: center, left, right, top, bottom, top-left, top-right, bottom-left , bottom-right or default)
+    - KO_N: the kick-off time for the half N, in format "MINUTES:SECONDS"
+
+The message with the options is sent
 --]] ----------------------------------------
 EXTENSION_TITLE = "Football gametime"
 CONFIG_KEY = "bookmark10"
@@ -45,7 +54,7 @@ function parse_and_validate_gametime(value)
         return true, "seconds cannot be larger than 60"
     end
 
-    local gametime = minutes .. ":" .. seconds
+    local gametime = string.format("%02d:%02d", minutes, seconds)
     return false, gametime
 end
 
@@ -75,7 +84,6 @@ function _read_table()
     end
 
     table = {}
-    table["default"] = "00:00-"
     while true do
         local line = f:read()
         if line == nil then
@@ -163,7 +171,7 @@ function click_save()
     end
 
     save_offsets(result1, result2)
-    send_to_worker(result1, result2)
+    send_msg_to_intf(result1, result2)
 
     error_input:set_text("")
     main_dlg:delete()
@@ -173,12 +181,14 @@ function click_cancel()
     main_dlg:delete()
 end
 
-function clear_worker_msg()
+function clear_msg_intf()
     vlc.config.set(CONFIG_KEY, "")
 end
 
-function send_to_worker(value_1half, value_2half)
-    vlc.config.set(CONFIG_KEY, _merge_offsets(value_1half, value_2half))
+function send_msg_to_intf(value_1half, value_2half)
+    -- Saves a config value to use as message to the interface
+    vlc.config.set(CONFIG_KEY, "top-left " .. _merge_offsets(value_1half, value_2half))
+    -- TODO: allow changing OSD_POSITION
 end
 
 function create_dialog()
@@ -187,7 +197,6 @@ function create_dialog()
     main_dlg:add_label("Kick off times", 1, 1, 2, 1) -- col, row, colspan, rowspan
 
     local value_1half, value_2half = load_offsets()
-    send_to_worker(value_1half, value_2half)
 
     main_dlg:add_label("1st half", 1, 2, 1, 1)
     text_input_1half = main_dlg:add_text_input(value_1half, 2, 2, 1, 1)
@@ -208,17 +217,17 @@ function activate()
 end
 
 function deactivate()
-    clear_worker_msg()
+    clear_msg_intf()
     main_dlg:delete() -- FIXME: does not always work!
 end
 
 function close()
-    clear_worker_msg()
+    clear_msg_intf()
 end
 
 function meta_changed()
     local value_1half, value_2half = load_offsets()
-    send_to_worker(value_1half, value_2half)
+    send_msg_to_intf(value_1half, value_2half)
 end
 
 function trigger_menu(id)
